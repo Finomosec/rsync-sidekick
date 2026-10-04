@@ -12,7 +12,7 @@ Just follow these principles and you're good.
     - No deletes of any kind
     - Just stick to 'move' and 'copy' operations
 2. No changes at source
-    - Source directory should be treated as read-only
+   - Files in source directory should strictly be treated as read-only
 3. Agnostic of operating systems
     - Except for `--shellscript` option
     - Agnostic of shells (`zsh`, `bash` etc.)
@@ -25,7 +25,7 @@ Just follow these principles and you're good.
 7. Be "abort safe"
 8. Don't maintain any persistent state (hard links, soft links, dot files etc.) in source directory or target directory
    or anywhere else to achieve the core logic.
-    - Temporary states and files may be created
+   - Temporary states and files may be created (but clean up after the run)
     - Debug/verbose options may create files (not core logic)
 
 ## Contribution guidelines
