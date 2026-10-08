@@ -99,6 +99,14 @@ func hashableOrphans(orphans []string, sourceFiles map[string]entity.FileMeta) [
 	return hashable
 }
 
+// skippedSmallNote names the orphans that hashableOrphans left out, for the archive scan line.
+func skippedSmallNote(orphans, hashable []string) string {
+	if n := len(orphans) - len(hashable); n > 0 {
+		return fmt.Sprintf(" (%d below --hash-min-size skipped)", n)
+	}
+	return ""
+}
+
 func writeCopyPlan(plan copyPlanOutput, orphans []string, actions []action.SyncAction,
 	archiveResolved set.Set[string], destDirPath string, sourceFiles map[string]entity.FileMeta,
 	knownDigests map[string]entity.FileDigest, digestFn service.OrphanDigestFunc,

@@ -142,7 +142,7 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 	// there were no candidates at destination, in which case that phase never ran.
 	var knownOrphanDigests map[string]entity.FileDigest
 	if len(candidatesAtDestination) == 0 {
-		fmte.Printf("No candidates found. Looks like all %d files are new.\n", len(orphansAtSource))
+		fmte.Printf("No move candidates at destination: all %d files are new.\n", len(orphansAtSource))
 	} else {
 		sort.Strings(candidatesAtDestination)
 		if verbose {
@@ -206,8 +206,8 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 			}
 		}
 		if len(unmatchedOrphans) > 0 {
-			fmte.Printf("Scanning %d archive path(s) for %d unmatched orphans...\n",
-				len(archivePaths), len(unmatchedOrphans))
+			fmte.Printf("Scanning %d archive path(s) for %d unmatched orphans%s...\n",
+				len(archivePaths), len(unmatchedOrphans), skippedSmallNote(orphansAtSource, hashable))
 			// Digests of unmatched orphans at source, computed on demand: only orphans
 			// that some archive file matches on extension and size are ever hashed.
 			digestFn := func(orphans []string) (map[string]entity.FileDigest, error) {
@@ -567,7 +567,7 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 		fmte.Printf("Finding candidates at destination...\n")
 		candidatesAtDestination := findCandidatesAtDestination(sourceFiles, destinationFiles, hashable)
 		if len(candidatesAtDestination) == 0 {
-			fmte.Printf("No candidates found. Looks like all %d files are new. rsync will do the rest.\n", len(orphansAtSource))
+			fmte.Printf("No move candidates at destination: all %d files are new.\n", len(orphansAtSource))
 		} else {
 			sort.Strings(candidatesAtDestination)
 			fmte.Printf("Found %d candidates.\n", len(candidatesAtDestination))
@@ -652,8 +652,8 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 			}
 		}
 		if len(unmatchedOrphans) > 0 {
-			fmte.Printf("Scanning %d archive path(s) for %d unmatched orphans...\n",
-				len(archivePaths), len(unmatchedOrphans))
+			fmte.Printf("Scanning %d archive path(s) for %d unmatched orphans%s...\n",
+				len(archivePaths), len(unmatchedOrphans), skippedSmallNote(orphansAtSource, hashable))
 			// Digests of unmatched orphans at source, computed on demand: only orphans
 			// that some archive file matches on extension and size are ever hashed.
 			digestFn := func(orphans []string) (map[string]entity.FileDigest, error) {
