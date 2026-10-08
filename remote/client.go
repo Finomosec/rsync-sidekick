@@ -330,7 +330,8 @@ func (w *chunkedWalk) result(resp WalkResponse) (map[string]entity.FileMeta, map
 		return nil, nil, 0, w.err
 	}
 	if w.entries != resp.Entries {
-		return nil, nil, 0, fmt.Errorf("walk incomplete: received %d of %d entries", w.entries, resp.Entries)
+		return nil, nil, 0, fmt.Errorf("walk incomplete: received %s of %s entries",
+			lib.GroupThousands(w.entries), lib.GroupThousands(resp.Entries))
 	}
 	return w.files, w.dirs, w.totalSize, nil
 }
@@ -403,7 +404,8 @@ func (c *AgentClient) Glob(patterns []string) ([][]string, error) {
 		return nil, fmt.Errorf("bad glob response: %w", err)
 	}
 	if len(resp.Matches) != len(patterns) {
-		return nil, fmt.Errorf("bad glob response: %d results for %d patterns", len(resp.Matches), len(patterns))
+		return nil, fmt.Errorf("bad glob response: %s results for %s patterns",
+			lib.GroupThousands(len(resp.Matches)), lib.GroupThousands(len(patterns)))
 	}
 	return resp.Matches, nil
 }

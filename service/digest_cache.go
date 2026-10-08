@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/m-manu/rsync-sidekick/v2/fmte"
+	"github.com/m-manu/rsync-sidekick/v2/lib"
 )
 
 const (
@@ -213,7 +214,7 @@ func (c *DigestCache) load() ([]uint64, error) {
 		c.flushLocked()
 	}
 	if skipped > 0 {
-		fmte.PrintfErr("warning: digest cache %s: skipped %d malformed lines\n", c.path, skipped)
+		fmte.PrintfErr("warning: digest cache %s: skipped %s malformed lines\n", c.path, lib.GroupThousands(skipped))
 	}
 	return pathHashes, nil
 }

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/m-manu/rsync-sidekick/v2/fmte"
+	"github.com/m-manu/rsync-sidekick/v2/lib"
 	"github.com/m-manu/rsync-sidekick/v2/service"
 )
 
@@ -58,7 +59,8 @@ func closeAgentDigestCache() {
 		return
 	}
 	hits, misses := c.Stats()
-	fmte.PrintfErr("Remote digest cache %s: %d reused, %d computed\n", c.Path(), hits, misses)
+	fmte.PrintfErr("Remote digest cache %s: %s reused, %s computed\n", c.Path(),
+		lib.GroupThousands(hits), lib.GroupThousands(misses))
 	if err := c.Close(); err != nil {
 		fmte.PrintfErr("warning: remote: couldn't save digest cache %s: %+v\n", c.Path(), err)
 	}

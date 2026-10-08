@@ -54,7 +54,7 @@ func buildIndex(baseDirPath string, filesToScan []string, counter *int32,
 	for _, relativePath := range filesToScan {
 		newValue := atomic.AddInt32(counter, 1)
 		path := filepath.Join(baseDirPath, relativePath)
-		fmte.PrintfV("Evaluating file (#%d): %s\n", newValue, path)
+		fmte.PrintfV("Evaluating file (#%s): %s\n", lib.GroupThousands(newValue), path)
 		digest, err := getDigest(path)
 		if err != nil {
 			errCount++
@@ -76,7 +76,7 @@ func buildIndexWithFS(fsys rsfs.FileSystem, baseDirPath string, filesToScan []st
 	for _, relativePath := range filesToScan {
 		newValue := atomic.AddInt32(counter, 1)
 		path := filepath.Join(baseDirPath, relativePath)
-		fmte.PrintfV("Evaluating file (#%d): %s\n", newValue, path)
+		fmte.PrintfV("Evaluating file (#%s): %s\n", lib.GroupThousands(newValue), path)
 		digest, err := getDigestWithFS(fsys, path)
 		if err != nil {
 			errCount++
@@ -555,8 +555,8 @@ func ScanArchivesForCopiesWithDigests(archiveWalks []ArchiveWalk,
 			}()
 			wg.Wait()
 			if orphanDigestErr != nil {
-				return nil, fmt.Errorf("error computing digests of %d orphan candidate(s): %w",
-					len(neededOrphans), orphanDigestErr)
+				return nil, fmt.Errorf("error computing digests of %s orphan candidate(s): %w",
+					lib.GroupThousands(len(neededOrphans)), orphanDigestErr)
 			}
 			for orphan, digest := range freshOrphanDigests {
 				orphanDigests[orphan] = digest

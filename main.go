@@ -22,7 +22,7 @@ import (
 const (
 	applicationMajorVersion = 2
 	applicationMinorVersion = 17
-	applicationPatchVersion = 4
+	applicationPatchVersion = 5
 )
 
 var applicationVersion = fmt.Sprintf("v%d.%d.%d",
@@ -432,11 +432,13 @@ func closeDigestCache() {
 	hits, misses := c.Stats()
 	if !c.Persistent() {
 		if hits > 0 {
-			fmte.Printf("Digests reused within this run: %d (computed: %d)\n", hits, misses)
+			fmte.Printf("Digests reused within this run: %s (computed: %s)\n",
+				lib.GroupThousands(hits), lib.GroupThousands(misses))
 		}
 		return
 	}
-	fmte.Printf("Digest cache %s: %d reused, %d computed\n", c.Path(), hits, misses)
+	fmte.Printf("Digest cache %s: %s reused, %s computed\n", c.Path(),
+		lib.GroupThousands(hits), lib.GroupThousands(misses))
 	if err := c.Close(); err != nil {
 		fmte.PrintfErr("warning: couldn't save digest cache %s: %+v\n", c.Path(), err)
 	}
@@ -570,7 +572,7 @@ func expandArchivePaths(paths []string, glob func([]string) ([][]string, error))
 		os.Exit(exitCodeArchivePathError)
 	}
 	if len(expanded) != len(paths) {
-		fmte.Printf("Archive paths: %d after resolving wildcards\n", len(expanded))
+		fmte.Printf("Archive paths: %s after resolving wildcards\n", lib.GroupThousands(len(expanded)))
 		fmte.PrintfV("Archive paths: %s\n", strings.Join(expanded, ", "))
 	}
 	return expanded

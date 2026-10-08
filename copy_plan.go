@@ -12,6 +12,7 @@ import (
 	"github.com/m-manu/rsync-sidekick/v2/bytesutil"
 	"github.com/m-manu/rsync-sidekick/v2/entity"
 	"github.com/m-manu/rsync-sidekick/v2/fmte"
+	"github.com/m-manu/rsync-sidekick/v2/lib"
 	"github.com/m-manu/rsync-sidekick/v2/service"
 )
 
@@ -102,7 +103,7 @@ func hashableOrphans(orphans []string, sourceFiles map[string]entity.FileMeta) [
 // skippedSmallNote names the orphans that hashableOrphans left out, for the archive scan line.
 func skippedSmallNote(orphans, hashable []string) string {
 	if n := len(orphans) - len(hashable); n > 0 {
-		return fmt.Sprintf(" (%d below --hash-min-size skipped)", n)
+		return fmt.Sprintf(" (%s below --hash-min-size skipped)", lib.GroupThousands(n))
 	}
 	return ""
 }
@@ -114,8 +115,8 @@ func writeCopyPlan(plan copyPlanOutput, orphans []string, actions []action.SyncA
 	unresolved := unresolvedOrphans(orphans, actions, destDirPath, archiveResolved)
 	toPlan := hashableOrphans(unresolved, sourceFiles)
 	small := len(unresolved) - len(toPlan)
-	fmte.Printf("Building copy plan for %d files nothing at destination can serve (%d below --hash-min-size go straight to the list)...\n",
-		len(unresolved), small)
+	fmte.Printf("Building copy plan for %s files nothing at destination can serve (%s below --hash-min-size go straight to the list)...\n",
+		lib.GroupThousands(len(unresolved)), lib.GroupThousands(small))
 	copyList, groups, err := service.BuildCopyPlan(toPlan, sourceFiles, knownDigests, digestFn)
 	if err != nil {
 		return err
@@ -141,15 +142,15 @@ func writeCopyPlan(plan copyPlanOutput, orphans []string, actions []action.SyncA
 		if err := service.WriteCopyList(plan.CopyListPath, copyList); err != nil {
 			return err
 		}
-		fmte.Printf("Copy list: %d files (%s) to transfer → %s\n",
-			len(copyList), bytesutil.BinaryFormat(transferBytes), plan.CopyListPath)
+		fmte.Printf("Copy list: %s files (%s) to transfer → %s\n",
+			lib.GroupThousands(len(copyList)), bytesutil.BinaryFormat(transferBytes), plan.CopyListPath)
 	}
 	if plan.PlanPath != "" {
 		if err := service.WritePlan(plan.PlanPath, groups); err != nil {
 			return err
 		}
-		fmte.Printf("Plan: %d duplicate groups, %d files (%s) to reflink afterwards → %s\n",
-			len(groups), targets, bytesutil.BinaryFormat(savedBytes), plan.PlanPath)
+		fmte.Printf("Plan: %s duplicate groups, %s files (%s) to reflink afterwards → %s\n",
+			lib.GroupThousands(len(groups)), lib.GroupThousands(targets), bytesutil.BinaryFormat(savedBytes), plan.PlanPath)
 	}
 	return nil
 }
@@ -161,9 +162,9 @@ func runApplyPlan(planPath, destDirPath string, dryRun bool, progressFrequency t
 		return err
 	}
 	if dryRun {
-		fmte.Printf("Checking %d plan groups against %s (dry run)...\n", len(groups), destDirPath)
+		fmte.Printf("Checking %s plan groups against %s (dry run)...\n", lib.GroupThousands(len(groups)), destDirPath)
 	} else {
-		fmte.Printf("Applying %d plan groups to %s...\n", len(groups), destDirPath)
+		fmte.Printf("Applying %s plan groups to %s...\n", lib.GroupThousands(len(groups)), destDirPath)
 	}
 	start := time.Now()
 	stats := service.ApplyPlan(groups, destDirPath, dryRun, runtime.NumCPU(), progressFrequency)
@@ -171,11 +172,12 @@ func runApplyPlan(planPath, destDirPath string, dryRun bool, progressFrequency t
 	if dryRun {
 		verb = "would reflink"
 	}
-	fmte.Printf("Done in %.1fs: %d groups applied, %d skipped; %s %d files (%s), %d already there, %d failed\n",
-		time.Since(start).Seconds(), stats.GroupsDone, stats.GroupsSkipped, verb, stats.TargetsDone,
-		bytesutil.BinaryFormat(stats.BytesSaved), stats.TargetsExisted, stats.TargetsFailed)
+	fmte.Printf("Done in %.1fs: %s groups applied, %s skipped; %s %s files (%s), %s already there, %s failed\n",
+		time.Since(start).Seconds(), lib.GroupThousands(stats.GroupsDone), lib.GroupThousands(stats.GroupsSkipped),
+		verb, lib.GroupThousands(stats.TargetsDone), bytesutil.BinaryFormat(stats.BytesSaved),
+		lib.GroupThousands(stats.TargetsExisted), lib.GroupThousands(stats.TargetsFailed))
 	if stats.TargetsFailed > 0 {
-		return fmt.Errorf("%d target(s) failed", stats.TargetsFailed)
+		return fmt.Errorf("%s target(s) failed", lib.GroupThousands(stats.TargetsFailed))
 	}
 	return nil
 }

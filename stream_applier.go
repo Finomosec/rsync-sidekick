@@ -75,8 +75,8 @@ func (s *streamApplier) report() {
 	if s.dryRun {
 		verb = "Would apply"
 	}
-	fmte.Printf("%s %d of %d destination actions while hashing (%s)\n",
-		verb, s.done, s.done+s.failed, s.stats.summary())
+	fmte.Printf("%s %s of %s destination actions while hashing (%s)\n",
+		verb, lib.GroupThousands(s.done), lib.GroupThousands(s.done+s.failed), s.stats.summary())
 }
 
 // hashSide is one side of the hashing progress.

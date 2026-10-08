@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -129,9 +130,15 @@ func FormatRate(perSecond float64) string {
 	}
 }
 
+// integer is every integer type a count, size or index in the output can have.
+type integer interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
+}
+
 // GroupThousands writes n with a comma between every three digits: 1234567 → 1,234,567.
-func GroupThousands(n int64) string {
-	digits := strconv.FormatInt(n, 10)
+// Every number in the human-readable output goes through it; files meant for tools don't.
+func GroupThousands[T integer](n T) string {
+	digits := fmt.Sprintf("%d", n)
 	sign := ""
 	if strings.HasPrefix(digits, "-") {
 		sign, digits = "-", digits[1:]

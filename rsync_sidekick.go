@@ -120,8 +120,8 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 	if destinationFilesErr != nil {
 		return nil, fmt.Errorf("error scanning destination directory: %+v", destinationFilesErr)
 	}
-	fmte.Printf("Found %d files (total size %s) at source and %d files (total size %s) at destination in %.1fs\n",
-		len(sourceFiles), bytesutil.BinaryFormat(sourceSize), len(destinationFiles),
+	fmte.Printf("Found %s files (total size %s) at source and %s files (total size %s) at destination in %.1fs\n",
+		lib.GroupThousands(len(sourceFiles)), bytesutil.BinaryFormat(sourceSize), lib.GroupThousands(len(destinationFiles)),
 		bytesutil.BinaryFormat(destinationSize), end.Sub(start).Seconds())
 	fmte.Printf("Finding files at source that don't have counterparts at destination...\n")
 	orphansAtSource := service.FindOrphans(sourceFiles, destinationFiles)
@@ -130,7 +130,7 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 		return []action.SyncAction{}, nil
 	}
 	sort.Strings(orphansAtSource)
-	fmte.Printf("Found %d files\n", len(orphansAtSource))
+	fmte.Printf("Found %s files\n", lib.GroupThousands(len(orphansAtSource)))
 	if verbose {
 		lib.WriteSliceToFile(orphansAtSource, fmt.Sprintf("./info_%s_orphans_at_source.txt", runID))
 	}
@@ -142,7 +142,7 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 	// there were no candidates at destination, in which case that phase never ran.
 	var knownOrphanDigests map[string]entity.FileDigest
 	if len(candidatesAtDestination) == 0 {
-		fmte.Printf("No move candidates at destination: all %d files are new.\n", len(orphansAtSource))
+		fmte.Printf("No move candidates at destination: all %s files are new.\n", lib.GroupThousands(len(orphansAtSource)))
 	} else {
 		sort.Strings(candidatesAtDestination)
 		if verbose {
@@ -150,7 +150,7 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 				fmt.Sprintf("./info_%s_candidates_at_destination.txt", runID),
 			)
 		}
-		fmte.Printf("Found %d candidates.\n", len(candidatesAtDestination))
+		fmte.Printf("Found %s candidates.\n", lib.GroupThousands(len(candidatesAtDestination)))
 		fmte.Printf("Identifying file renames/movements and timestamp changes...\n")
 		start = time.Now()
 		var sourceCounter, destinationCounter int32
@@ -173,8 +173,8 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 		knownOrphanDigests = matcher.OrphanDigests()
 		fmte.Printf("Completed in %.1fs\n", end.Sub(start).Seconds())
 		if len(actions) > 0 {
-			fmte.Printf("Found %d actions that can save you %s of files transfer!\n",
-				len(actions), bytesutil.BinaryFormat(matcher.Savings()))
+			fmte.Printf("Found %s actions that can save you %s of files transfer!\n",
+				lib.GroupThousands(len(actions)), bytesutil.BinaryFormat(matcher.Savings()))
 		}
 	}
 
@@ -206,8 +206,9 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 			}
 		}
 		if len(unmatchedOrphans) > 0 {
-			fmte.Printf("Scanning %d archive path(s) for %d unmatched orphans%s...\n",
-				len(archivePaths), len(unmatchedOrphans), skippedSmallNote(orphansAtSource, hashable))
+			fmte.Printf("Scanning %s archive path(s) for %s unmatched orphans%s...\n",
+				lib.GroupThousands(len(archivePaths)), lib.GroupThousands(len(unmatchedOrphans)),
+				skippedSmallNote(orphansAtSource, hashable))
 			// Digests of unmatched orphans at source, computed on demand: only orphans
 			// that some archive file matches on extension and size are ever hashed.
 			digestFn := func(orphans []string) (map[string]entity.FileDigest, error) {
@@ -234,7 +235,7 @@ func getSyncActionsWithProgressFS(runID string, sourceDirPath string, sourceFS r
 				return nil, fmt.Errorf("error scanning archives: %+v", archiveErr)
 			}
 			if len(archiveActions) > 0 {
-				fmte.Printf("Found %d additional actions from archive paths\n", len(archiveActions))
+				fmte.Printf("Found %s additional actions from archive paths\n", lib.GroupThousands(len(archiveActions)))
 				actions = append(actions, archiveActions...)
 			}
 		}
@@ -287,7 +288,7 @@ func rsyncSidekick(runID string, sourceDirPath string, exclusions set.Set[string
 		verbose, progressFrequency, copyDuplicates, useReflink, archivePaths, onArchiveAction,
 		newDestApplier(outputScriptPath, destinationDirPath, dryRun, verbose, moved), moved)
 	if appliedArchiveActions > 0 {
-		fmte.Printf("Applied %d actions from archive paths while scanning\n", appliedArchiveActions)
+		fmte.Printf("Applied %s actions from archive paths while scanning\n", lib.GroupThousands(appliedArchiveActions))
 	}
 	if err != nil {
 		return err // no extra info needed
@@ -385,7 +386,7 @@ func rsyncSidekickRemote(runID string, remoteLoc remote.Location, localPath stri
 		exclusions, destDirPath, destFS, verbose, progressFrequency,
 		copyDuplicates, useReflink, archivePaths, onArchiveAction, applier, moved)
 	if appliedArchiveActions > 0 {
-		fmte.Printf("Applied %d actions from archive paths while scanning\n", appliedArchiveActions)
+		fmte.Printf("Applied %s actions from archive paths while scanning\n", lib.GroupThousands(appliedArchiveActions))
 	}
 	if actionsErr != nil {
 		return actionsErr
@@ -544,8 +545,8 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 		return fmt.Errorf("error scanning destination directory: %+v", destinationFilesErr)
 	}
 
-	fmte.Printf("Found %d files (total size %s) at source and %d files (total size %s) at destination in %.1fs\n",
-		len(sourceFiles), bytesutil.BinaryFormat(sourceSize), len(destinationFiles),
+	fmte.Printf("Found %s files (total size %s) at source and %s files (total size %s) at destination in %.1fs\n",
+		lib.GroupThousands(len(sourceFiles)), bytesutil.BinaryFormat(sourceSize), lib.GroupThousands(len(destinationFiles)),
 		bytesutil.BinaryFormat(destinationSize), end.Sub(start).Seconds())
 
 	fmte.Printf("Finding files at source that don't have counterparts at destination...\n")
@@ -562,15 +563,15 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 		fmte.Printf("All files at source directory have counterparts.\n")
 	} else {
 		sort.Strings(orphansAtSource)
-		fmte.Printf("Found %d files\n", len(orphansAtSource))
+		fmte.Printf("Found %s files\n", lib.GroupThousands(len(orphansAtSource)))
 
 		fmte.Printf("Finding candidates at destination...\n")
 		candidatesAtDestination := findCandidatesAtDestination(sourceFiles, destinationFiles, hashable)
 		if len(candidatesAtDestination) == 0 {
-			fmte.Printf("No move candidates at destination: all %d files are new.\n", len(orphansAtSource))
+			fmte.Printf("No move candidates at destination: all %s files are new.\n", lib.GroupThousands(len(orphansAtSource)))
 		} else {
 			sort.Strings(candidatesAtDestination)
-			fmte.Printf("Found %d candidates.\n", len(candidatesAtDestination))
+			fmte.Printf("Found %s candidates.\n", lib.GroupThousands(len(candidatesAtDestination)))
 
 			fmte.Printf("Identifying file renames/movements and timestamp changes...\n")
 			start = time.Now()
@@ -619,8 +620,8 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 			if len(actions) == 0 {
 				fmte.Printf("No sync actions found. You may run rsync.\n")
 			} else {
-				fmte.Printf("Found %d actions that can save you %s of files transfer!\n",
-					len(actions), bytesutil.BinaryFormat(matcher.Savings()))
+				fmte.Printf("Found %s actions that can save you %s of files transfer!\n",
+					lib.GroupThousands(len(actions)), bytesutil.BinaryFormat(matcher.Savings()))
 			}
 		}
 	}
@@ -652,8 +653,9 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 			}
 		}
 		if len(unmatchedOrphans) > 0 {
-			fmte.Printf("Scanning %d archive path(s) for %d unmatched orphans%s...\n",
-				len(archivePaths), len(unmatchedOrphans), skippedSmallNote(orphansAtSource, hashable))
+			fmte.Printf("Scanning %s archive path(s) for %s unmatched orphans%s...\n",
+				lib.GroupThousands(len(archivePaths)), lib.GroupThousands(len(unmatchedOrphans)),
+				skippedSmallNote(orphansAtSource, hashable))
 			// Digests of unmatched orphans at source, computed on demand: only orphans
 			// that some archive file matches on extension and size are ever hashed.
 			digestFn := func(orphans []string) (map[string]entity.FileDigest, error) {
@@ -688,13 +690,13 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 					&archiveProgress)
 				stopArchiveProgress()
 				if appliedArchiveActions > 0 {
-					fmte.Printf("Applied %d actions from archive paths while scanning\n", appliedArchiveActions)
+					fmte.Printf("Applied %s actions from archive paths while scanning\n", lib.GroupThousands(appliedArchiveActions))
 				}
 				if archiveErr != nil {
 					return fmt.Errorf("error scanning archives: %+v", archiveErr)
 				}
 				if len(archiveActions) > 0 {
-					fmte.Printf("Found %d additional actions from archive paths\n", len(archiveActions))
+					fmte.Printf("Found %s additional actions from archive paths\n", lib.GroupThousands(len(archiveActions)))
 					actions = append(actions, archiveActions...)
 				}
 			} else {
@@ -727,13 +729,13 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 					archiveErr = flushArchiveActions()
 				}
 				if appliedArchiveActions > 0 {
-					fmte.Printf("Applied %d actions from archive paths while scanning\n", appliedArchiveActions)
+					fmte.Printf("Applied %s actions from archive paths while scanning\n", lib.GroupThousands(appliedArchiveActions))
 				}
 				if archiveErr != nil {
 					return fmt.Errorf("error scanning archives via agent: %+v", archiveErr)
 				}
 				if len(archiveActions) > 0 {
-					fmte.Printf("Found %d additional actions from archive paths\n", len(archiveActions))
+					fmte.Printf("Found %s additional actions from archive paths\n", lib.GroupThousands(len(archiveActions)))
 					actions = append(actions, archiveActions...)
 				}
 			}
@@ -758,7 +760,7 @@ func rsyncSidekickRemoteExec(remoteLoc remote.Location, remotePath, localPath st
 	if syncDirTimestamps && sourceDirs != nil && destDirs != nil {
 		dirActions := computeDirTimestampActionsFromMaps(sourceDirPath, sourceDirs, destDirPath, destDirs)
 		if len(dirActions) > 0 {
-			fmte.Printf("Found %d directory timestamp actions\n", len(dirActions))
+			fmte.Printf("Found %s directory timestamp actions\n", lib.GroupThousands(len(dirActions)))
 			actions = append(actions, dirActions...)
 		}
 	}
@@ -839,7 +841,7 @@ func startArchiveScanProgress(progress *service.ArchiveScanProgress, where strin
 func withDigestProgress(count int, where string, progressFrequency time.Duration,
 	compute func(counter *int32) (map[string]entity.FileDigest, error),
 ) (map[string]entity.FileDigest, error) {
-	fmte.Printf("Hashing %s orphan candidate(s) at source...\n", lib.GroupThousands(int64(count)))
+	fmte.Printf("Hashing %s orphan candidate(s) at source...\n", lib.GroupThousands(count))
 	var counter int32
 	stop := progressBoard.Track(progressFrequency, "Hashing orphans", func() []lib.ProgressPart {
 		return []lib.ProgressPart{{Count: int64(atomic.LoadInt32(&counter)), Total: int64(count), Label: "src",
@@ -998,8 +1000,8 @@ func scanArchivesViaAgent(agentClient *remote.AgentClient, archiveWalks []servic
 			return nil, fmt.Errorf("error computing archive digests via agent: %w", archiveDigestErr)
 		}
 		if orphanDigestErr != nil {
-			return nil, fmt.Errorf("error computing digests of %d orphan candidate(s): %w",
-				len(neededOrphans), orphanDigestErr)
+			return nil, fmt.Errorf("error computing digests of %s orphan candidate(s): %w",
+				lib.GroupThousands(len(neededOrphans)), orphanDigestErr)
 		}
 		for orphan, digest := range freshOrphanDigests {
 			orphanDigests[orphan] = digest
@@ -1226,7 +1228,7 @@ func performActionsViaAgent(agentClient *remote.AgentClient, actions []action.Sy
 	successCount := 0
 	for i, r := range results {
 		header := strings.Replace(
-			fmt.Sprintf("%4d/%d %s: ", i+1, len(actions), actions[i]),
+			fmt.Sprintf("%4s/%s %s: ", lib.GroupThousands(i+1), lib.GroupThousands(len(actions)), actions[i]),
 			destDirPath+"/", "", -1,
 		)
 		if r.Success {
@@ -1246,11 +1248,11 @@ func performActionsViaAgent(agentClient *remote.AgentClient, actions []action.Sy
 	}
 
 	if dryRun {
-		fmte.Printf("Dry run completed in %.1fs: %d actions would be performed (%s)\n",
-			end.Sub(start).Seconds(), successCount, stats.summary())
+		fmte.Printf("Dry run completed in %.1fs: %s actions would be performed (%s)\n",
+			end.Sub(start).Seconds(), lib.GroupThousands(successCount), stats.summary())
 	} else {
-		fmte.Printf("Sync completed in %.1fs: %d out of %d actions succeeded (%s)\n",
-			end.Sub(start).Seconds(), successCount, len(actions), stats.summary())
+		fmte.Printf("Sync completed in %.1fs: %s out of %s actions succeeded (%s)\n",
+			end.Sub(start).Seconds(), lib.GroupThousands(successCount), lib.GroupThousands(len(actions)), stats.summary())
 	}
 	return nil
 }
@@ -1299,7 +1301,7 @@ func performActionsTracked(actions []action.SyncAction, destinationDirPath strin
 		defer printerDone.Done()
 		for r := range printCh {
 			header := strings.Replace(
-				fmt.Sprintf("%4d/%d %s: ", r.index+1, total, r.action),
+				fmt.Sprintf("%4s/%s %s: ", lib.GroupThousands(r.index+1), lib.GroupThousands(total), r.action),
 				prefixStrip, "", -1,
 			)
 			if r.err != nil {
@@ -1346,11 +1348,11 @@ func performActionsTracked(actions []action.SyncAction, destinationDirPath strin
 	end := time.Now()
 
 	if dryRun {
-		fmte.Printf("Dry run completed in %.1fs: %d actions would be performed (%s)\n",
-			end.Sub(start).Seconds(), successCount, stats.summary())
+		fmte.Printf("Dry run completed in %.1fs: %s actions would be performed (%s)\n",
+			end.Sub(start).Seconds(), lib.GroupThousands(successCount), stats.summary())
 	} else {
-		fmte.Printf("Sync completed in %.1fs: %d out of %d actions succeeded (%s)\n",
-			end.Sub(start).Seconds(), successCount, total, stats.summary())
+		fmte.Printf("Sync completed in %.1fs: %s out of %s actions succeeded (%s)\n",
+			end.Sub(start).Seconds(), lib.GroupThousands(successCount), lib.GroupThousands(total), stats.summary())
 	}
 	return nil
 }

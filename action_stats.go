@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -64,7 +63,7 @@ func (s *actionStats) summary() string {
 	parts := make([]string, 0, 6)
 	add := func(count int64, label string) {
 		if count > 0 {
-			parts = append(parts, strconv.FormatInt(count, 10)+" "+label)
+			parts = append(parts, lib.GroupThousands(count)+" "+label)
 		}
 	}
 	add(s.dirs.Load(), "dirs created")

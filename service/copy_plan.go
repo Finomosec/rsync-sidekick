@@ -77,8 +77,8 @@ func BuildCopyPlan(unresolvedOrphans []string, sourceFiles map[string]entity.Fil
 		slices.Sort(needDigest)
 		fresh, digestErr := digestFn(needDigest)
 		if digestErr != nil {
-			return nil, nil, fmt.Errorf("error computing digests of %d duplicate candidate(s): %w",
-				len(needDigest), digestErr)
+			return nil, nil, fmt.Errorf("error computing digests of %s duplicate candidate(s): %w",
+				lib.GroupThousands(len(needDigest)), digestErr)
 		}
 		for path, digest := range fresh {
 			digests[path] = digest
@@ -266,8 +266,8 @@ func applyGroup(group PlanGroup, baseDir string, dryRun bool, stats *ApplyPlanSt
 		return
 	}
 	if info.Size() != group.Size || info.ModTime().Unix() != group.Original.ModTime {
-		fmte.PrintfErr("skipping group: original \"%s\" differs from plan (size %d/%d, mtime %d/%d)\n",
-			group.Original.Path, info.Size(), group.Size, info.ModTime().Unix(), group.Original.ModTime)
+		fmte.PrintfErr("skipping group: original \"%s\" differs from plan (size %s/%s, mtime %d/%d)\n",
+			group.Original.Path, lib.GroupThousands(info.Size()), lib.GroupThousands(group.Size), info.ModTime().Unix(), group.Original.ModTime)
 		atomic.AddInt64(&stats.GroupsSkipped, 1)
 		return
 	}
