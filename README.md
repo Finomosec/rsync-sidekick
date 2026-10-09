@@ -1,89 +1,88 @@
 # rsync-sidekick
 
 [![build-and-test](https://github.com/m-manu/rsync-sidekick/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/m-manu/rsync-sidekick/actions/workflows/build-and-test.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/m-manu/rsync-sidekick/v2)](https://goreportcard.com/report/github.com/m-manu/rsync-sidekick/v2)
 [![Go Reference](https://pkg.go.dev/badge/github.com/m-manu/rsync-sidekick/v2.svg)](https://pkg.go.dev/github.com/m-manu/rsync-sidekick/v2)
 [![License](https://img.shields.io/badge/License-Apache%202-blue.svg)](./LICENSE)
 
 ## Why?
 
-`rsync` is a fantastic tool. Yet, by itself, it's a pain to use for repeated backing up of media files (videos, music,
-photos, etc.) _that are reorganized frequently_. Why? Because, reorganized files get retransferred by `rsync`, wasting a
-lot of time and infra costs.
+`rsync` is a fantastic tool. On its own, though, it is a pain to use for repeated backups of media files (videos, music,
+photos, etc.) _that are reorganized frequently_. When those files are reorganized, `rsync` transfers them again. That
+wastes a lot of time and raises infrastructure costs.
 
-`rsync-sidekick` is a safe and simple tool that is designed to run **before** `rsync` is run. `rsync-sidekick` is *not*
-a replacement for `rsync` doesn't intend to be one.
+`rsync-sidekick` is a safe, simple tool designed to run **before** `rsync`. It is *not* a replacement for `rsync`, and
+it doesn't intend to be one.
 
 ## What?
 
-`rsync-sidekick` propagates following changes (or any combination) from _source directory_ to _destination directory_:
+`rsync-sidekick` propagates the following changes (or any combination of them) from the _source directory_ to the
+_destination directory_:
 
-1. Change in file modification timestamp
-2. Rename of file/directory
-3. Moving a file from one directory to another
+1. A change to a file's modification timestamp
+2. A rename of a file or directory
+3. A move of a file from one directory to another
 
-Additionally, it does the following things:
+It can also:
 
-1. Directory timestamp synchronization (with `-d` flag)
-2. Local copying of duplicate-content files at the destination (with `-c` flag)
-3. Copying from archive/backup directories on the destination side (with `-a` flag)
+1. Synchronize directory timestamps (with the `-d` flag)
+2. Copy duplicate-content files locally at the destination (with the `-c` flag)
+3. Copy files from archive or backup directories on the destination side (with the `-a` flag)
 
-It works with **local directories**, **remote hosts via SSH** (using a remote agent or SFTP fallback) and even inside
-**Docker containers**! 🙂
+It works with **local directories** and **remote hosts via SSH** (using a remote agent or an SFTP fallback), and even
+inside **Docker containers**. 🙂
 
 ## What this isn't
 
-* This tool **does not delete** any files or folders (under any circumstances) — that's why it's safe to use 😌
-    * Your files are just _moved around_
-    * Now, if you're uncomfortable with this tool even moving your files around, consider using the `--dry-run` option
-* This tool **does not** actually **transfer** files — that's for `rsync` to do 🙂
-* Since you'd run `rsync` after this tool is run, any changes that this tool couldn't propagate would just be propagated
-  by `rsync`
-    * So the most that you might lose is some time with `rsync` doing more work than it could have — Which is likely
-      still much less than not using this tool at all 😄
+* This tool **does not delete** any files or folders under any circumstances — that's why it's safe to use. 😌
+    * Your files are just _moved around_.
+    * If you're uncomfortable with this tool moving your files at all, consider using the `--dry-run` option.
+* This tool **does not** actually **transfer** files — that's for `rsync` to do. 🙂
+* Since you run `rsync` after this tool, any changes it couldn't propagate are still applied by `rsync`.
+    * The most you might lose is some time, because `rsync` does more work than it otherwise would. That's still likely
+      much less time than you would spend without this tool. 😄
 
 ## How to install?
 
-1. Install Go version at least **1.25**
-    * On Mac: `brew install go`
+1. Install Go **1.26** or later:
+    * On a Mac: `brew install go`
     * On Ubuntu: `snap install go`
     * For anything else: [Go downloads page](https://go.dev/dl/)
-2. Run command:
+2. Run this command:
    ```bash
    go install github.com/m-manu/rsync-sidekick/v2@latest
    ```
-3. Add following line in your `.bashrc`/`.zshrc` file:
+3. Add the following line to your `.bashrc` or `.zshrc`:
    ```bash
    export PATH="$PATH:$HOME/go/bin"
    ```
 
 ## How to use?
 
-Just two simple steps:
+Just two steps:
 
-**Step 1**: Run this tool
+**Step 1:** Run this tool.
 
 ```bash
 # Local to local:
 rsync-sidekick /Users/manu/Photos/ /Volumes/Portable/Photos/
 
-# Local to remote (faster if rsync-sidekick is also installed on remote host):
+# Local to remote (faster if rsync-sidekick is also installed on the remote host):
 rsync-sidekick /Users/manu/Photos/ user@server:/backup/Photos/
 
 # Remote to local:
 rsync-sidekick user@server:/data/Photos/ /Users/manu/Photos/
 ```
 
-**Step 2**: Run `rsync` as you would normally do
+**Step 2:** Run `rsync` as you normally would.
 
 ```bash
-# Note the trailing slashes below. Without them, rsync's behavior is different!
+# Keep the trailing slashes. Without them, rsync behaves differently.
 rsync -av /Users/manu/Photos/ /Volumes/Portable/Photos/
 ```
 
 ## Command line options
 
-Running `rsync-sidekick --help` displays following information:
+Running `rsync-sidekick --help` prints the following:
 
 ```
 rsync-sidekick is a tool to propagate file renames, movements and timestamp changes from a source directory to a destination directory.
@@ -413,52 +412,51 @@ when source/destination and archives follow the same `--one-file-system` setting
 rsync-sidekick --digest-cache -c --reflink -a /mnt/backup/archive/ user@server:/data/ /mnt/backup/data/
 ```
 
-### Running this from a Docker container
+### Running from a Docker container
 
-Not everyone needs this. But if you do, below is a simple example:
+Not everyone needs this. If you do, here is a simple example:
 
 ```shell
 # Run rsync-sidekick:
 docker run --rm -v /Users/manu:/mnt/homedir manumk/rsync-sidekick rsync-sidekick /mnt/homedir/Photos/ /mnt/homedir/Photos_backup/
 
-# Then run rsync: (note the trailing slashes -- without them, rsync's behavior is different)
+# Then run rsync. Keep the trailing slashes; without them, rsync behaves differently.
 docker run --rm -v /Users/manu:/mnt/homedir manumk/rsync-sidekick rsync /mnt/homedir/Photos/ /mnt/homedir/Photos_backup/
 ```
 
 ## FAQs
 
-#### Why was this tool created? Doesn't `rsync` provide flags for doing what this tool does? 🤔
+#### Why was this tool created? Doesn't `rsync` already have flags for what this tool does? 🤔
 
-`rsync` provides some flags - But it's complicated!
+`rsync` does provide some flags, but they're complicated.
 
-`--fuzzy` requires match of file size (same as rsync-sidekick). However, it also requires:
+`--fuzzy` requires a file-size match (as `rsync-sidekick` does). It also requires:
 
-1. modification time match (How do you speed up rsync when timestamps of pics and videos are updated by photo organizing
-   tools, exiftool etc.?)
-2. files to be "similarly named" (This doesn't handle a ton of use-cases like reorganizing files across folders, change
-   of extensions etc.)
+1. A modification-time match. That doesn't help when photo-organizing tools, such as exiftool, update the timestamps of
+   pictures and videos.
+2. Files that are "similarly named". That misses many cases, such as reorganizing files across folders or changing
+   their extensions.
 
-As for flags `--detect-renamed`, `--detect-moved` and `—detect-renamed-lax`, they're patches on standard `rsync`. We
-don't know which regression cases these flags break. In fact, the patch author mentions _"Use this option only if you
-accept the risk and disk I/O is a bottleneck."_ in their code comment.
+`--detect-renamed`, `--detect-moved`, and `--detect-renamed-lax` are patches to standard `rsync`. We don't know which
+cases these flags break. In a code comment, the patch author says: _"Use this option only if you accept the risk and
+disk I/O is a bottleneck."_
 
-#### How about I use `rsync` with hard links instead? I read a blog somewhere.
+#### What about using `rsync` with hard links? I read about that in a blog post.
 
-Approaches using hard links require you to maintain a 'source shadow'. They're also quite 'stateful', with hidden
-directories that we aren't supposed to touch!
+Approaches that use hard links require you to maintain a 'source shadow'. They're also quite 'stateful': they rely on
+hidden directories that you aren't supposed to touch!
 
 Anyway, choose what works best for you. 👍
 
 #### How will I benefit from using this tool?
 
-Using `rsync-sidekick` before `rsrync` makes your backup process significantly faster than using only `rsync`. Sometimes
-this performance benefit can even be 100x😲, if the only changes at your _source directory_ are the types mentioned
-earlier in this article.
+Using `rsync-sidekick` before `rsync` makes your backup process significantly faster than using `rsync` alone.
+Sometimes this speedup can even be 100x 😲 if the only changes in your _source directory_ are the ones described above.
 
 #### How do I build this?
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for instructions.
 
-#### I want to contribute to this tool. How do I?
+#### I want to contribute to this tool. How do I do that?
 
 Great! See [CONTRIBUTING.md](./CONTRIBUTING.md).
